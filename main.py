@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 # ---------- CONNECT TO SUPABASE ----------
-supabase_url = os.getenv("https://dbtrhxuscvskwsaurmrb.supabase.co")
+supabase_url = os.getenv("‎https://dbtrhxuscvskwsaurmrb.supabase.co")
 supabase_key = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRidHJoeHVzY3Zza3dzYXVybXJiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTIyNDQ4OSwiZXhwIjoyMDk2ODAwNDg5fQ.HWPrGIP0H80o-T_7nhvbemunv2j-m5o81ihILUDvmgA")  # Use SERVICE key for backend
 supabase: Client = create_client(supabase_url, supabase_key)
 
@@ -56,18 +56,22 @@ async def chat(request: ChatRequest):
         "timestamp": datetime.utcnow().isoformat()
     }).execute()
 
-    # 3. Build a prompt for Gemini (tells it how to act as a real estate agent)
+    # 3. Build a prompt for Gemini - now forcing it to ask for name and phone number
     prompt = f"""
 You are a friendly real estate assistant for a website. 
-You help visitors find properties, answer questions about listings, and book appointments.
+Your #1 job is to collect the visitor's **full name** and **phone number** so a real agent can follow up.
 
 Here are the property listings (if any): {request.property_data or "No specific listings provided."}
 
 The user said: {request.user_message}
 
-Respond in a helpful, professional, and short way. 
-If they ask to book a viewing, tell them you will connect them with an agent and ask for their name and phone number.
-Always ask a follow-up question to keep the conversation going.
+RULES:
+- If the user asks about properties, answer their question briefly, then ALWAYS ask: "May I have your name and phone number so I can send you more details?"
+- If the user asks to book a viewing, say "I'd love to arrange that! Please give me your full name and phone number and I'll have an agent call you within 30 minutes."
+- If the user already gave their name and number in this message, thank them and tell them an agent will reach out soon.
+- If the user does NOT give their name and number, you MUST ask for it in every single reply until they provide both.
+- Keep replies short (2-3 sentences maximum) and friendly.
+- Always end your reply with a question to keep them talking.
 """
 
     # 4. Get reply from Gemini
